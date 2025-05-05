@@ -1,0 +1,71 @@
+# docker-compose.yml
+# Defines services for Frontend (Nginx), Backend (Flask), and Database (Postgres).
+# Uses Git repositories for build contexts, suitable for Portainer deployment without direct file access.
+
+version: '3.8'
+
+services:
+  # Frontend Nginx Service
+  frontend:
+    build:
+      context: https://github.com/YOUR_USERNAME/YOUR_FRONTEND_REPO.git#main # <-- REPLACE with your frontend Git repo URL and branch/tag
+      dockerfile: Dockerfile # Assumes Dockerfile is in the root of the repo
+    container_name: openscad_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Map host port 8080 to Nginx container port 80
+    networks:
+      - openscad_network
+    depends_on:
+      - backend # Optional: wait for backend (though frontend is static)
+
+  # Backend Flask Service
+  backend:
+    build:
+      context: https://github.com/YOUR_USERNAME/YOUR_BACKEND_REPO.git#main # <-- REPLACE with your backend Git repo URL and branch/tag
+      dockerfile: backend/Dockerfile # Assumes Dockerfile is in 'backend' subfolder of the repo
+    container_name: openscad_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000" # Map host port 5000 to container port 5000
+    environment:
+      # Use environment variables defined in Portainer Stack settings
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB} # Escaped $ for compose variables
+      - FLASK_APP=backend_server.py
+      - FLASK_ENV=development # Change to 'production' for production
+      # Add other backend environment variables if needed
+    # REMOVED volume mount for code - code comes from Git build context now
+    # volumes:
+    #   - ./backend:/app
+    depends_on:
+      - db
+    networks:
+      - openscad_network
+
+  # PostgreSQL Database Service
+  db:
+    image: postgres:15
+    container_name: openscad_db
+    restart: unless-stopped
+    environment:
+      # Use environment variables defined in Portainer Stack settings
+      # Define PostgreSQL credentials and database name
+      POSTGRES_USER: ${POSTGRES_USER:-openscad_user} # Escaped $
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-supersecretpassword} # Escaped $
+      POSTGRES_DB: ${POSTGRES_DB:-openscad_examples} # Escaped $
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Optionally expose DB port (use with caution)
+      - "5432:5432"
+    networks:
+      - openscad_network
+
+# Define named volumes
+volumes:
+  pgdata:
+
+# Define custom network
+networks:
+  openscad_network:
+    driver: bridge

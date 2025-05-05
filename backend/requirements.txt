@@ -1,0 +1,11 @@
+# backend/requirements.txt
+# Python dependencies for the Flask backend.
+# (No changes from previous version)
+
+Flask>=2.0 # Core web framework
+Flask-Cors>=3.0 # For handling Cross-Origin Resource Sharing
+psycopg2-binary>=2.9 # PostgreSQL database adapter (use psycopg2 for production source builds)
+
+# Add other dependencies as needed, e.g.:
+# SQLAlchemy>=1.4
+# Flask-SQLAlchemy>=2.5
