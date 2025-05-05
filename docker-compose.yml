@@ -8,8 +8,8 @@ services:
   # Frontend Nginx Service
   frontend:
     build:
-      context: https://github.com/YOUR_USERNAME/YOUR_FRONTEND_REPO.git#main # <-- REPLACE with your frontend Git repo URL and branch/tag
-      dockerfile: Dockerfile # Assumes Dockerfile is in the root of the repo
+      # context: ./frontend # Context is now implied to be '.' relative to compose file, targeting frontend dir
+      dockerfile: ./frontend/Dockerfile # Path relative to compose file
     container_name: openscad_frontend
     restart: unless-stopped
     ports:
@@ -22,21 +22,22 @@ services:
   # Backend Flask Service
   backend:
     build:
-      context: https://github.com/YOUR_USERNAME/YOUR_BACKEND_REPO.git#main # <-- REPLACE with your backend Git repo URL and branch/tag
-      dockerfile: backend/Dockerfile # Assumes Dockerfile is in 'backend' subfolder of the repo
+      # context: ./backend # Context is now implied to be '.' relative to compose file, targeting backend dir
+      dockerfile: ./backend/Dockerfile # Path relative to compose file
     container_name: openscad_backend
     restart: unless-stopped
     ports:
       - "5000:5000" # Map host port 5000 to container port 5000
     environment:
-      # Use environment variables defined in Portainer Stack settings
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB} # Escaped $ for compose variables
+      # Use environment variables defined via .env file or system environment
+      - DATABASE_URL=postgresql://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@db:5432/\${POSTGRES_DB} # Escaped $ for compose variables
       - FLASK_APP=backend_server.py
       - FLASK_ENV=development # Change to 'production' for production
       # Add other backend environment variables if needed
-    # REMOVED volume mount for code - code comes from Git build context now
-    # volumes:
-    #   - ./backend:/app
+    volumes:
+      # Mount local code for development (reflects changes without rebuilding)
+      # Remove this if you prefer builds to copy code permanently
+      - ./backend:/app
     depends_on:
       - db
     networks:
@@ -48,11 +49,10 @@ services:
     container_name: openscad_db
     restart: unless-stopped
     environment:
-      # Use environment variables defined in Portainer Stack settings
-      # Define PostgreSQL credentials and database name
-      POSTGRES_USER: ${POSTGRES_USER:-openscad_user} # Escaped $
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-supersecretpassword} # Escaped $
-      POSTGRES_DB: ${POSTGRES_DB:-openscad_examples} # Escaped $
+      # Use environment variables defined via .env file or system environment
+      POSTGRES_USER: \${POSTGRES_USER:-openscad_user} # Escaped $
+      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-supersecretpassword} # Escaped $
+      POSTGRES_DB: \${POSTGRES_DB:-openscad_examples} # Escaped $
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
